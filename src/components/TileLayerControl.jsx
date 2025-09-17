@@ -115,7 +115,6 @@ const tileOptions = [
     maxZoom: 22,
   },
 ];
-
 const defaultFilterValues = {
   brightness: 100,
   contrast: 100,
@@ -127,7 +126,6 @@ const defaultFilterValues = {
   invert: 0,
   opacity: 100,
 };
-
 const presets = [
   { name: "Aucun", values: { ...defaultFilterValues } },
   { name: "Grayscale", values: { ...defaultFilterValues, grayscale: 100 } },
@@ -149,7 +147,6 @@ const presets = [
   { name: "Night Mode (Texture Nocturne)", values: { ...defaultFilterValues, invert: 100, hueRotate: 180, brightness: 80 } },
   { name: "Embossed (Texture Relief)", values: { ...defaultFilterValues, grayscale: 100, contrast: 200, brightness: 50 } },
 ];
-
 const getMarkerIcon = (color) => {
   return L.divIcon({
     className: "custom-icon",
@@ -158,11 +155,9 @@ const getMarkerIcon = (color) => {
     iconAnchor: [10, 10],
   });
 };
-
 const CustomMarker = ({ marker, startEditing }) => {
   const markerRef = useRef(null);
   const timeoutRef = useRef(null);
-
   useEffect(() => {
     if (markerRef.current) {
       markerRef.current.on("popupopen", (e) => {
@@ -181,7 +176,6 @@ const CustomMarker = ({ marker, startEditing }) => {
       });
     }
   }, []);
-
   return (
     <Marker
       ref={markerRef}
@@ -210,7 +204,6 @@ const CustomMarker = ({ marker, startEditing }) => {
     </Marker>
   );
 };
-
 export default function TileLayerControl() {
   const [activeTile, setActiveTile] = useState(tileOptions[0]);
   const [hdEnabled, setHdEnabled] = useState(false);
@@ -231,17 +224,14 @@ export default function TileLayerControl() {
   const [colorInput, setColorInput] = useState("#ff0000");
   const [photosFiles, setPhotosFiles] = useState([]);
   const [videosFiles, setVideosFiles] = useState([]);
-
   // Synchroniser le zoom max et réinitialiser les filtres quand la couche change
   useEffect(() => {
     setMaxZoom(activeTile.maxZoom || 18);
     setFilterValues({ ...defaultFilterValues });
   }, [activeTile]);
-
   useEffect(() => {
     const socket = io("http://localhost:5000");
     setSocketInstance(socket);
-
     socket.on("allMarkers", (data) => setMarkers(data));
     socket.on("newMarker", (marker) => setMarkers((prev) => [...prev, marker]));
     socket.on("updatedMarker", (marker) =>
@@ -249,45 +239,37 @@ export default function TileLayerControl() {
         prev.map((m) => (m._id === marker._id ? marker : m))
       )
     );
-
     return () => {
       socket.disconnect();
     };
   }, []);
-
   const toggleHD = () => {
     setHdEnabled(!hdEnabled);
     setMaxZoom(!hdEnabled ? 22 : activeTile.maxZoom || 18);
   };
-
   const handleMaxZoomChange = (e) => {
     const zoom = parseInt(e.target.value, 10);
     setMaxZoom(zoom);
   };
-
   const handlePresetChange = (e) => {
     const selectedPreset = presets.find(p => p.name === e.target.value);
     if (selectedPreset) {
       setFilterValues({ ...selectedPreset.values });
     }
   };
-
   const updateFilterValue = (key, value) => {
     setFilterValues(prev => ({ ...prev, [key]: value }));
   };
-
   // Construire la chaîne de filtre à partir des valeurs
   const getTileFilter = () => {
     const { brightness, contrast, saturate, grayscale, sepia, hueRotate, blur, invert, opacity } = filterValues;
     return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) grayscale(${grayscale}%) sepia(${sepia}%) hue-rotate(${hueRotate}deg) blur(${blur}px) invert(${invert}%) opacity(${opacity}%)`;
   };
-
   // Appliquer le filtre couleur et le rendu net à chaque tuile chargée
   const handleTileLoad = (e) => {
     e.tile.style.filter = getTileFilter();
     e.tile.style.imageRendering = 'crisp-edges'; // ou 'pixelated' pour un rendu plus net
   };
-
   useMapEvents({
     click: (e) => {
       if (placingMarker) {
@@ -302,7 +284,6 @@ export default function TileLayerControl() {
       }
     },
   });
-
   const getUser = () => {
     const userString = localStorage.getItem("user");
     if (!userString) return null;
@@ -313,10 +294,8 @@ export default function TileLayerControl() {
       return null;
     }
   };
-
   const handleAddSubmit = async () => {
     const user = getUser();
-
     const formData = new FormData();
     formData.append("latitude", newMarkerPos.lat);
     formData.append("longitude", newMarkerPos.lng);
@@ -326,14 +305,12 @@ export default function TileLayerControl() {
     if (user) {
       formData.append("userId", user._id);
     }
-
     for (let file of photosFiles) {
       formData.append("photos", file);
     }
     for (let file of videosFiles) {
       formData.append("videos", file);
     }
-
     try {
       const res = await fetch("http://localhost:5000/markers", {
         method: "POST",
@@ -349,7 +326,6 @@ export default function TileLayerControl() {
       alert("Erreur lors de l'ajout du marqueur");
     }
   };
-
   const startEditing = (marker) => {
     setCurrentMarker(marker);
     setTitleInput(marker.title || "");
@@ -359,20 +335,17 @@ export default function TileLayerControl() {
     setVideosFiles([]);
     setShowEditModal(true);
   };
-
   const handleEditSubmit = async () => {
     const formData = new FormData();
     formData.append("title", titleInput);
     formData.append("comment", commentInput);
     formData.append("color", colorInput);
-
     for (let file of photosFiles) {
       formData.append("photos", file);
     }
     for (let file of videosFiles) {
       formData.append("videos", file);
     }
-
     try {
       const res = await fetch(`http://localhost:5000/markers/${currentMarker._id}`, {
         method: "PATCH",
@@ -388,7 +361,6 @@ export default function TileLayerControl() {
       alert("Erreur lors de la mise à jour du marqueur");
     }
   };
-
   const panelStyle = {
     backgroundColor: "white",
     padding: "10px",
@@ -396,7 +368,6 @@ export default function TileLayerControl() {
     zIndex: 1000,
     boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
   };
-
   const toggleButtonStyle = {
     backgroundColor: "white",
     padding: "5px",
@@ -409,7 +380,6 @@ export default function TileLayerControl() {
     alignItems: "center",
     justifyContent: "center",
   };
-
   const modalStyle = {
     position: "fixed",
     top: 0,
@@ -422,14 +392,12 @@ export default function TileLayerControl() {
     justifyContent: "center",
     zIndex: 1001,
   };
-
   const modalContentStyle = {
     backgroundColor: "white",
     padding: "20px",
     borderRadius: "8px",
     width: "300px",
   };
-
   return (
     <>
       <TileLayer
@@ -443,11 +411,9 @@ export default function TileLayerControl() {
           tileload: handleTileLoad,
         }}
       />
-
       {markers.map((marker) => (
         <CustomMarker key={marker._id} marker={marker} startEditing={startEditing} />
       ))}
-
       {/* Contrôleur des couches */}
       {showLayerControl ? (
         <div
@@ -508,7 +474,6 @@ export default function TileLayerControl() {
           <FaLayerGroup size={20} />
         </button>
       )}
-
       {/* Paramètres HD et filtres */}
       {showHdSettings ? (
         <div
@@ -550,7 +515,6 @@ export default function TileLayerControl() {
               />
             </label>
           </div>
-
           <div style={{ marginTop: "10px" }}>
             <h4>Filtres de Texture</h4>
             <label>
@@ -612,7 +576,6 @@ export default function TileLayerControl() {
           <FaCog size={20} />
         </button>
       )}
-
       {/* Contrôle des marqueurs */}
       {showMarkerControl ? (
         <div
@@ -669,7 +632,6 @@ export default function TileLayerControl() {
           <FaMapMarkerAlt size={20} />
         </button>
       )}
-
       {showAddModal && (
         <div style={modalStyle}>
           <div style={modalContentStyle}>
@@ -714,7 +676,6 @@ export default function TileLayerControl() {
           </div>
         </div>
       )}
-
       {showEditModal && (
         <div style={modalStyle}>
           <div style={modalContentStyle}>
