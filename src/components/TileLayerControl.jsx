@@ -1,5 +1,5 @@
 import { TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { FaLayerGroup, FaCog, FaTimes, FaMapMarkerAlt } from "react-icons/fa";
 import io from "socket.io-client";
 import * as L from "leaflet";
@@ -149,6 +149,67 @@ const presets = [
   { name: "Night Mode (Texture Nocturne)", values: { ...defaultFilterValues, invert: 100, hueRotate: 180, brightness: 80 } },
   { name: "Embossed (Texture Relief)", values: { ...defaultFilterValues, grayscale: 100, contrast: 200, brightness: 50 } },
 ];
+
+const getMarkerIcon = (color) => {
+  return L.divIcon({
+    className: "custom-icon",
+    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid black;"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+};
+
+const CustomMarker = ({ marker, startEditing }) => {
+  const markerRef = useRef(null);
+  const timeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.on("popupopen", (e) => {
+        const popupEl = e.popup.getElement();
+        if (popupEl) {
+          popupEl.addEventListener("mouseenter", () => {
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current);
+              timeoutRef.current = null;
+            }
+          });
+          popupEl.addEventListener("mouseleave", () => {
+            markerRef.current.closePopup();
+          });
+        }
+      });
+    }
+  }, []);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[marker.latitude, marker.longitude]}
+      icon={getMarkerIcon(marker.color)}
+      eventHandlers={{
+        mouseover: (e) => e.target.openPopup(),
+        mouseout: (e) => {
+          timeoutRef.current = setTimeout(() => {
+            e.target.closePopup();
+          }, 200);
+        },
+      }}
+    >
+      <Popup>
+        <h3>{marker.title || "Sans titre"}</h3>
+        <p>{marker.comment || "Sans commentaire"}</p>
+        {marker.photos.map((url, idx) => (
+          <img key={idx} src={`http://localhost:5000${url}`} alt="" style={{ width: "100px", margin: "5px" }} />
+        ))}
+        {marker.videos.map((url, idx) => (
+          <video key={idx} src={`http://localhost:5000${url}`} width="100" controls style={{ margin: "5px" }} />
+        ))}
+        <button onClick={() => startEditing(marker)}>Éditer</button>
+      </Popup>
+    </Marker>
+  );
+};
 
 export default function TileLayerControl() {
   const [activeTile, setActiveTile] = useState(tileOptions[0]);
@@ -328,15 +389,6 @@ export default function TileLayerControl() {
     }
   };
 
-  const getMarkerIcon = (color) => {
-    return L.divIcon({
-      className: "custom-icon",
-      html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid black;"></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-  };
-
   const panelStyle = {
     backgroundColor: "white",
     padding: "10px",
@@ -393,27 +445,7 @@ export default function TileLayerControl() {
       />
 
       {markers.map((marker) => (
-        <Marker
-          key={marker._id}
-          position={[marker.latitude, marker.longitude]}
-          icon={getMarkerIcon(marker.color)}
-          eventHandlers={{
-            mouseover: (e) => e.target.openPopup(),
-            mouseout: (e) => e.target.closePopup(),
-          }}
-        >
-          <Popup>
-            <h3>{marker.title || "Sans titre"}</h3>
-            <p>{marker.comment || "Sans commentaire"}</p>
-            {marker.photos.map((url, idx) => (
-              <img key={idx} src={`http://localhost:5000${url}`} alt="" style={{ width: "100px", margin: "5px" }} />
-            ))}
-            {marker.videos.map((url, idx) => (
-              <video key={idx} src={`http://localhost:5000${url}`} width="100" controls style={{ margin: "5px" }} />
-            ))}
-            <button onClick={() => startEditing(marker)}>Éditer</button>
-          </Popup>
-        </Marker>
+        <CustomMarker key={marker._id} marker={marker} startEditing={startEditing} />
       ))}
 
       {/* Contrôleur des couches */}
