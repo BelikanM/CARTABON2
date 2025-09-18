@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import RegisterForm from "./components/RegisterForm";
@@ -34,24 +33,28 @@ function App() {
         {userId && <button className="nav-button" onClick={handleLogout}>Déconnexion</button>}
       </nav>
 
-      <Routes>
-        <Route path="/register" element={<RegisterForm setUserId={handleSetUserId} />} />
-        <Route path="/login" element={<LoginForm setUserId={handleSetUserId} />} />
-        <Route
-          path="/map"
-          element={
-            userId ? (
-              <>
-                <GeoTracker userId={userId} />
-                <MapTracker userId={userId} />
-              </>
-            ) : (
-              <p className="center-text">Veuillez vous inscrire ou vous connecter pour voir la carte en temps réel.</p>
-            )
-          }
-        />
-        <Route path="*" element={<p className="center-text">Page non trouvée. <Link to="/register">Inscription</Link></p>} />
-      </Routes>
+      <main style={{ flex: 1, width: "100%", overflow: "auto" }}> {/* Conteneur principal flexible */}
+        <Routes>
+          <Route path="/register" element={<RegisterForm setUserId={handleSetUserId} />} />
+          <Route path="/login" element={<LoginForm setUserId={handleSetUserId} />} />
+          <Route
+            path="/map"
+            element={
+              userId ? (
+                <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+                  <GeoTracker userId={userId} />
+                  <div className="map-container">
+                    <MapTracker userId={userId} />
+                  </div>
+                </div>
+              ) : (
+                <p className="center-text">Veuillez vous inscrire ou vous connecter pour voir la carte en temps réel.</p>
+              )
+            }
+          />
+          <Route path="*" element={<p className="center-text">Page non trouvée. <Link to="/register">Inscription</Link></p>} />
+        </Routes>
+      </main>
     </Router>
   );
 }
